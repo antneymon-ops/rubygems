@@ -114,6 +114,18 @@ class Gem::SpecificationPolicy
 
     validate_unique_links
 
+    validate_post_install_message
+
+    validate_signing_key_and_cert_chain
+
+    validate_empty_author_entries
+
+    validate_requirements_list
+
+    validate_cert_chain_files
+
+    validate_duplicate_authors
+
     if @warnings > 0
       if strict
         error "specification has warnings"
@@ -156,6 +168,12 @@ class Gem::SpecificationPolicy
 
       if value.size > 1024
         error "#{entry} value is too large (#{value.size} > 1024)"
+      end
+
+      if key == "allowed_push_host"
+        unless VALID_URI_PATTERN.match?(value)
+          error "#{entry} has invalid link: #{value.inspect}"
+        end
       end
 
       next unless METADATA_LINK_KEYS.include? key
@@ -389,6 +407,7 @@ or set it to nil if you don't want to specify a license.
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
   LAZY_PATTERN = /\AFI XME|\ATO DO/x
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i
+  MAX_POST_INSTALL_MESSAGE_LENGTH = 65_535 # :nodoc:
 
   def validate_lazy_metadata
     unless @specification.authors.grep(LAZY_PATTERN).empty?
@@ -405,6 +424,10 @@ or set it to nil if you don't want to specify a license.
 
     if LAZY_PATTERN.match?(@specification.summary)
       error "#{LAZY} is not a summary"
+    end
+
+    if LAZY_PATTERN.match?(@specification.post_install_message)
+      error "#{LAZY} is not a post_install_message"
     end
 
     if LAZY_PATTERN.match?(@specification.homepage)
@@ -428,12 +451,17 @@ or set it to nil if you don't want to specify a license.
   end
 
   def validate_values
-    %w[author homepage summary description files].each do |attribute|
+    %w[author homepage summary description email files].each do |attribute|
       validate_attribute_present(attribute)
     end
 
     if @specification.description == @specification.summary
       warning "description and summary are identical"
+    end
+
+    summary = @specification.summary
+    if summary && summary.length > 160
+      warning "summary is too long (#{summary.length} > 160)"
     end
 
     # TODO: raise at some given date
@@ -505,6 +533,64 @@ You have specified rake based extension, but rake is not added as runtime depend
           #{keys}
         Only the first one will be shown on rubygems.org
       WARNING
+    end
+  end
+
+  def validate_post_install_message # :nodoc:
+    msg = @specification.post_install_message
+    return unless msg && !msg.empty?
+
+    if msg.length > MAX_POST_INSTALL_MESSAGE_LENGTH
+      warning "post_install_message is too long (#{msg.length} > #{MAX_POST_INSTALL_MESSAGE_LENGTH})"
+    end
+  end
+
+  def validate_signing_key_and_cert_chain # :nodoc:
+    has_key = !@specification.signing_key.nil?
+    has_chain = !@specification.cert_chain.empty?
+
+    if has_key && !has_chain
+      warning "signing_key is set but cert_chain is empty"
+    elsif !has_key && has_chain
+      warning "cert_chain is set but signing_key is not"
+    end
+  end
+
+  def validate_empty_author_entries # :nodoc:
+    @specification.authors.each do |author|
+      if author.to_s.strip.empty?
+        warning "authors should not include empty or whitespace-only entries"
+        break
+      end
+    end
+  end
+
+  def validate_requirements_list # :nodoc:
+    @specification.requirements.each do |req|
+      if req.to_s.strip.empty?
+        warning "requirements should not include empty entries"
+        break
+      end
+    end
+  end
+
+  def validate_cert_chain_files # :nodoc:
+    return unless packaging
+
+    @specification.cert_chain.each do |cert_path|
+      next if File.exist?(cert_path)
+
+      warning "cert_chain entry #{cert_path} does not exist"
+    end
+  end
+
+  def validate_duplicate_authors # :nodoc:
+    warned = {}
+    @specification.authors.each do |author|
+      if !warned[author] && @specification.authors.count(author) > 1
+        warning "duplicate author #{author.inspect} in authors list"
+        warned[author] = true
+      end
     end
   end
 
