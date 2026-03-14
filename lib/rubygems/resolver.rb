@@ -110,8 +110,8 @@ class Gem::Resolver
   def explain(stage, *data) # :nodoc:
     return unless DEBUG_RESOLVER
 
-    d = data.map(&:pretty_inspect).join(", ")
-    $stderr.printf "%10s %s\n", stage.to_s.upcase, d
+    debug_data = data.map(&:pretty_inspect).join(", ")
+    $stderr.printf "%10s %s\n", stage.to_s.upcase, debug_data
   end
 
   def explain_list(stage) # :nodoc:

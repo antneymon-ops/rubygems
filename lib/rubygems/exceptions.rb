@@ -42,9 +42,9 @@ class Gem::DependencyResolutionError < Gem::DependencyError
 
   def initialize(conflict)
     @conflict = conflict
-    a, b = conflicting_dependencies
+    first_dep, second_dep = conflicting_dependencies
 
-    super "conflicting dependencies #{a} and #{b}\n#{@conflict.explanation}"
+    super "conflicting dependencies #{first_dep} and #{second_dep}\n#{@conflict.explanation}"
   end
 
   def conflicting_dependencies

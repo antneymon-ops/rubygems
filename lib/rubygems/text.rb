@@ -52,34 +52,35 @@ module Gem::Text
   # Vendored version of DidYouMean::Levenshtein.distance from the ruby/did_you_mean gem @ 1.4.0
   # https://github.com/ruby/did_you_mean/blob/2ddf39b874808685965dbc47d344cf6c7651807c/lib/did_you_mean/levenshtein.rb#L7-L37
   def levenshtein_distance(str1, str2)
-    n = str1.length
-    m = str2.length
-    return m if n.zero?
-    return n if m.zero?
+    str1_length = str1.length
+    str2_length = str2.length
+    return str2_length if str1_length.zero?
+    return str1_length if str2_length.zero?
 
-    d = (0..m).to_a
-    x = nil
+    distances = (0..str2_length).to_a
+    current_distance = nil
 
     # to avoid duplicating an enumerable object, create it outside of the loop
     str2_codepoints = str2.codepoints
 
-    str1.each_codepoint.with_index(1) do |char1, i|
-      j = 0
-      while j < m
-        cost = char1 == str2_codepoints[j] ? 0 : 1
-        x = min3(
-          d[j + 1] + 1, # insertion
-          i + 1,      # deletion
-          d[j] + cost # substitution
+    str1.each_codepoint.with_index(1) do |char1, str1_index|
+      str2_index = 0
+      left_cell = str1_index
+      while str2_index < str2_length
+        cost = char1 == str2_codepoints[str2_index] ? 0 : 1
+        current_distance = min3(
+          distances[str2_index + 1] + 1, # insertion
+          left_cell + 1,                 # deletion
+          distances[str2_index] + cost   # substitution
         )
-        d[j] = i
-        i = x
+        distances[str2_index] = left_cell
+        left_cell = current_distance
 
-        j += 1
+        str2_index += 1
       end
-      d[m] = x
+      distances[str2_length] = current_distance
     end
 
-    x
+    current_distance
   end
 end
