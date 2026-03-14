@@ -4,16 +4,16 @@ module Gem::BundlerVersionFinder
   def self.bundler_version
     return if bundle_config_version == "system"
 
-    v = ENV["BUNDLER_VERSION"]
-    v = nil if v&.empty?
+    version_string = ENV["BUNDLER_VERSION"]
+    version_string = nil if version_string&.empty?
 
-    v ||= bundle_update_bundler_version
-    return if v == true
+    version_string ||= bundle_update_bundler_version
+    return if version_string == true
 
-    v ||= lockfile_version
-    return unless v
+    version_string ||= lockfile_version
+    return unless version_string
 
-    Gem::Version.new(v)
+    Gem::Version.new(version_string)
   end
 
   def self.prioritize!(specs)
@@ -28,13 +28,13 @@ module Gem::BundlerVersionFinder
     return unless "update".start_with?(ARGV.first || " ")
     bundler_version = nil
     update_index = nil
-    ARGV.each_with_index do |a, i|
-      if update_index && update_index.succ == i && a =~ Gem::Version::ANCHORED_VERSION_PATTERN
-        bundler_version = a
+    ARGV.each_with_index do |arg, index|
+      if update_index && update_index.succ == index && arg =~ Gem::Version::ANCHORED_VERSION_PATTERN
+        bundler_version = arg
       end
-      next unless a =~ /\A--bundler(?:[= ](#{Gem::Version::VERSION_PATTERN}))?\z/
+      next unless arg =~ /\A--bundler(?:[= ](#{Gem::Version::VERSION_PATTERN}))?\z/
       bundler_version = $1 || true
-      update_index = i
+      update_index = index
     end
     bundler_version
   end
@@ -55,9 +55,9 @@ module Gem::BundlerVersionFinder
     unless gemfile
       begin
         Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
+          next unless dep_file = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
 
-          gemfile = File.join directory, gemfile
+          gemfile = File.join directory, dep_file
           break
         end
       rescue Errno::ENOENT

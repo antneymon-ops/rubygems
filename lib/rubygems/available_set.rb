@@ -24,20 +24,20 @@ class Gem::AvailableSet
   def <<(o)
     case o
     when Gem::AvailableSet
-      s = o.set
+      tuples = o.set
     when Array
-      s = o.map do |sp,so|
-        if !sp.is_a?(Gem::Specification) || !so.is_a?(Gem::Source)
+      tuples = o.map do |spec, source|
+        if !spec.is_a?(Gem::Specification) || !source.is_a?(Gem::Source)
           raise TypeError, "Array must be in [[spec, source], ...] form"
         end
 
-        Tuple.new(sp,so)
+        Tuple.new(spec, source)
       end
     else
       raise TypeError, "must be a Gem::AvailableSet"
     end
 
-    @set += s
+    @set += tuples
     @sorted = nil
 
     self
@@ -81,8 +81,8 @@ class Gem::AvailableSet
 
   def sorted
     @sorted ||= @set.sort do |a,b|
-      i = b.spec <=> a.spec
-      i != 0 ? i : (a.source <=> b.source)
+      comparison = b.spec <=> a.spec
+      comparison != 0 ? comparison : (a.source <=> b.source)
     end
   end
 
@@ -91,8 +91,8 @@ class Gem::AvailableSet
   end
 
   def source_for(spec)
-    f = @set.find {|t| t.spec == spec }
-    f.source
+    found_tuple = @set.find {|t| t.spec == spec }
+    found_tuple.source
   end
 
   ##
