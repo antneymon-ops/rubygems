@@ -1153,7 +1153,7 @@ class Gem::Specification < Gem::BasicSpecification
       remotes, = fetcher.search_for_dependency dependency
       remotes  = remotes.map {|n, _| n.version }
 
-      latest_remote = remotes.sort.last
+      latest_remote = remotes.max
 
       yield [local_spec, latest_remote] if
         latest_remote && local_spec.version < latest_remote
@@ -1403,7 +1403,7 @@ class Gem::Specification < Gem::BasicSpecification
 
       specs = spec_dep.matching_specs(true).uniq(&:full_name)
 
-      if specs.size == 0
+      if specs.empty?
         raise Gem::MissingSpecError.new(spec_dep.name, spec_dep.requirement, "at: #{spec_file}")
       elsif specs.size == 1
         specs.first.activate
