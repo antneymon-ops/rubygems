@@ -407,6 +407,10 @@ or set it to nil if you don't want to specify a license.
       error "#{LAZY} is not a summary"
     end
 
+    if LAZY_PATTERN.match?(@specification.homepage)
+      error "#{LAZY} is not a homepage"
+    end
+
     homepage = @specification.homepage
 
     # Make sure a homepage is valid HTTP/HTTPS URI
@@ -424,7 +428,7 @@ or set it to nil if you don't want to specify a license.
   end
 
   def validate_values
-    %w[author homepage summary files].each do |attribute|
+    %w[author homepage summary description files].each do |attribute|
       validate_attribute_present(attribute)
     end
 

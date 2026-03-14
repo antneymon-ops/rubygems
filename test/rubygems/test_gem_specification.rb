@@ -3242,6 +3242,22 @@ Please report a bug if this causes problems.
 
       @a1.homepage = "https://rubygems.org"
       assert_equal true, @a1.validate
+
+      @a1.homepage = "#{f} (set your homepage)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a homepage), e.message
+
+      @a1.homepage = "#{t} (set your homepage)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a homepage), e.message
     end
   end
 
@@ -3461,6 +3477,17 @@ Did you mean 'Ruby'?
     end
 
     assert_match "no summary specified", @ui.error
+  end
+
+  def test_validate_empty_description
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.description = nil
+      @a1.validate
+    end
+
+    assert_match "no description specified", @ui.error
   end
 
   def test_validate_name
