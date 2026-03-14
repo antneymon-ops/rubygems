@@ -536,6 +536,33 @@ task update_licenses_branch: :update_licenses do
   end
 end
 
+desc "Update Python lockfile"
+task :update_python_lockfile do
+  sh("uv pip compile -o .github/workflows/lint/pylock.toml .github/workflows/lint/requirements.in")
+end
+
+desc "Create branch to update Python lockfile"
+task update_python_lockfile_branch: :update_python_lockfile do
+  date = Time.now.strftime("%Y-%m-%d")
+  branch_name = "python-lockfile-#{date}"
+
+  require "open3"
+  stdout, stderr, status = Open3.capture3(*%w[git ls-remote --heads origin], "refs/heads/#{branch_name}")
+  raise stderr unless status.success?
+
+  lockfile = ".github/workflows/lint/pylock.toml"
+  _, _, diff_status = Open3.capture3("git", "diff", "--no-ext-diff", "--ignore-submodules", "--quiet", "--", lockfile)
+
+  if diff_status.success?
+    puts "Python lockfile is in sync"
+  elsif stdout.empty?
+    system(*%w[git checkout -b], branch_name, exception: true)
+    system(*%w[git commit -m], "Update Python lockfile as of #{date}", lockfile, exception: true)
+  else
+    puts "A Python lockfile update PR already exists"
+  end
+end
+
 desc "Run specs"
 task :spec do
   chdir("bundler") do
