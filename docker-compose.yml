@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  ai_insights:
+    build:
+      context: ./ai_insights
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      RACK_ENV: development
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      DATABASE_URL: sqlite:///app/db/development.sqlite3
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID:-}
+      GOOGLE_LOCATION: ${GOOGLE_LOCATION:-us-central1}
+      VERTEX_AI_MODEL: ${VERTEX_AI_MODEL:-gemini-1.5-pro}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-004}
+    volumes:
+      - ai_insights_db:/app/db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  ai_insights_db:
