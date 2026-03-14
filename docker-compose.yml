@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - gem_cache:/usr/local/bundle
+    environment:
+      - RUBY_ENV=development
+      - RUBYOPT=-Ilib
+    working_dir: /app
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - gem_cache:/usr/local/bundle
+    environment:
+      - RUBY_ENV=test
+      - RUBYOPT=-Ilib
+    working_dir: /app
+    command: bin/rake test
+
+volumes:
+  gem_cache:
