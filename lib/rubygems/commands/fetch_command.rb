@@ -3,6 +3,7 @@
 require_relative "../command"
 require_relative "../local_remote_options"
 require_relative "../version_option"
+require_relative "../user_download_schema"
 
 class Gem::Commands::FetchCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -11,6 +12,7 @@ class Gem::Commands::FetchCommand < Gem::Command
   def initialize
     defaults = {
       suggest_alternate: true,
+      show_stats: false,
       version: Gem::Requirement.default,
     }
 
@@ -27,6 +29,10 @@ class Gem::Commands::FetchCommand < Gem::Command
 
     add_option "--[no-]suggestions", "Suggest alternates when gems are not found" do |value, options|
       options[:suggest_alternate] = value
+    end
+
+    add_option "--[no-]stats", "Show download statistics after fetching" do |value, options|
+      options[:show_stats] = value
     end
   end
 
@@ -64,7 +70,10 @@ then repackaging it.
   def execute
     check_version
 
+    @download_stats = Gem::UserDownloadSchema::Stats.new
     exit_code = fetch_gems
+
+    @download_stats.display if options[:show_stats]
 
     terminate_interaction exit_code
   end
@@ -97,13 +106,28 @@ then repackaging it.
 
       if spec.nil?
         show_lookup_failure gem_name, gem_version, errors, suppress_suggestions, options[:domain]
+        record_download(gem_name, gem_version.to_s, platform, author: nil, success: false)
         exit_code |= 2
         next
       end
       source.download spec
+      record_download(spec.name, spec.version.to_s, spec.platform, author: spec.authors.first, success: true)
       say "Downloaded #{spec.full_name}"
     end
 
     exit_code
+  end
+
+  def record_download(gem_name, version, platform, author:, success:)
+    return unless @download_stats
+
+    schema = Gem::UserDownloadSchema.new(
+      gem_name: gem_name,
+      version: version.to_s,
+      author: author || "unknown",
+      platform: platform || Gem::Platform::RUBY
+    )
+    schema.mark_success! if success
+    @download_stats.record(schema)
   end
 end
