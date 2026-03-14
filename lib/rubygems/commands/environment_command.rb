@@ -62,6 +62,14 @@ proxy server.
 If you would like to push gems to a private gem server the RUBYGEMS_HOST
 environment variable can be set to the URI for that server.
 
+If you would like to authenticate to a gem server without being prompted for
+credentials, the GEM_HOST_API_KEY environment variable can be set to an API
+key for that server. The API key can be obtained by running `gem signin` or
+from the gem server's web interface.
+
+If you have multi-factor authentication (MFA) enabled, you can provide the OTP
+(one-time password) code via the GEM_HOST_OTP_CODE environment variable.
+
 If you are packaging RubyGems all of RubyGems' defaults are in
 lib/rubygems/defaults.rb.  You may override these in
 lib/rubygems/defaults/operating_system.rb
