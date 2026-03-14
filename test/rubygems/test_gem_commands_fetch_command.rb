@@ -216,6 +216,22 @@ ERROR:  Could not find a valid gem 'foobar' (2) in any repository
     assert_equal expected, @ui.error
   end
 
+  def test_execute_with_stats
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 2
+    end
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:show_stats] = true
+
+    output = capture_output { execute_with_exit_code }.first
+
+    assert_includes output, "=== Download Statistics ==="
+    assert_includes output, "Total Downloads"
+    assert_includes output, "Successful"
+    assert_includes output, "Success Rate"
+  end
+
   private
 
   def execute_with_term_error
