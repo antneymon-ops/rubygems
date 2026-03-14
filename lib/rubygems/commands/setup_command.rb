@@ -552,11 +552,11 @@ abort "#{deprecation_message}"
           Gem::Version.new(x)
         end
 
-        history_string = ""
+        history_string = +""
 
-        until versions.length == 0 ||
+        until versions.empty? ||
               versions.shift <= options[:previous_version] do
-          history_string += version_lines.shift + text.shift
+          history_string << version_lines.shift + text.shift
         end
 
         history_string

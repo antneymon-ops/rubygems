@@ -64,7 +64,7 @@ class Gem::Request::ConnectionPools # :nodoc:
       intersection = (host_tokens - pattern_tokens) | (pattern_tokens - host_tokens)
 
       # When we do the split into tokens we miss a dot character, so add it back if we need it
-      missing_dot = intersection.length > 0 ? 1 : 0
+      missing_dot = intersection.empty? ? 0 : 1
       start = intersection.join(".").size + missing_dot
 
       no_proxy_host = host[start..-1]

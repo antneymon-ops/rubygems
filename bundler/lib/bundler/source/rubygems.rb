@@ -88,7 +88,7 @@ module Bundler
       end
 
       def no_remotes?
-        @remotes.size == 0
+        @remotes.empty?
       end
 
       def can_lock?(spec)
