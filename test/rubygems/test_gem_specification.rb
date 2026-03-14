@@ -3242,6 +3242,22 @@ Please report a bug if this causes problems.
 
       @a1.homepage = "https://rubygems.org"
       assert_equal true, @a1.validate
+
+      @a1.homepage = "#{f} (set your homepage)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a homepage), e.message
+
+      @a1.homepage = "#{t} (set your homepage)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a homepage), e.message
     end
   end
 
@@ -3461,6 +3477,184 @@ Did you mean 'Ruby'?
     end
 
     assert_match "no summary specified", @ui.error
+  end
+
+  def test_validate_empty_description
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.description = nil
+      @a1.validate
+    end
+
+    assert_match "no description specified", @ui.error
+  end
+
+  def test_validate_post_install_message_lazy
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.post_install_message = "#{f} (add your post_install_message)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a post_install_message), e.message
+
+      @a1.post_install_message = "#{t} (add your post_install_message)"
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal %("#{f}" or "#{t}" is not a post_install_message), e.message
+    end
+  end
+
+  def test_validate_empty_email
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.email = nil
+      @a1.validate
+    end
+
+    assert_match "no email specified", @ui.error
+  end
+
+  def test_validate_long_summary
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.summary = "x" * 161
+      @a1.validate
+    end
+
+    assert_match "summary is too long (161 > 160)", @ui.error
+  end
+
+  def test_validate_allowed_push_host_invalid_uri
+    util_setup_validate
+
+    @a1.metadata["allowed_push_host"] = "not-a-valid-uri"
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+
+    assert_match "has invalid link", e.message
+  end
+
+  def test_validate_allowed_push_host_valid_uri
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.metadata["allowed_push_host"] = "https://push.example.com"
+      assert @a1.validate
+    end
+
+    assert_empty @ui.error
+  end
+
+  def test_validate_long_post_install_message
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.post_install_message = "x" * 65_536
+      @a1.validate
+    end
+
+    assert_match "post_install_message is too long (65536 > 65535)", @ui.error
+  end
+
+  def test_validate_signing_key_without_cert_chain
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.signing_key = File.join(@tempdir, "mykey.pem")
+      @a1.cert_chain = []
+      @a1.validate
+    end
+
+    assert_match "signing_key is set but cert_chain is empty", @ui.error
+  end
+
+  def test_validate_cert_chain_without_signing_key
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.signing_key = nil
+      @a1.cert_chain = ["certs/example.pem"]
+      @a1.validate
+    end
+
+    assert_match "cert_chain is set but signing_key is not", @ui.error
+  end
+
+  def test_validate_authors_empty_entry
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.authors = ["John Doe", ""]
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match "authors should not include empty or whitespace-only entries", @ui.error
+    end
+  end
+
+  def test_validate_authors_whitespace_entry
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.authors = ["John Doe", "   "]
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match "authors should not include empty or whitespace-only entries", @ui.error
+    end
+  end
+
+  def test_validate_requirements_empty_entry
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.requirements = ["A working computer", "  "]
+      @a1.validate
+    end
+
+    assert_match "requirements should not include empty entries", @ui.error
+  end
+
+  def test_validate_missing_cert_chain_file
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.cert_chain = ["certs/nonexistent.pem"]
+      @a1.signing_key = File.join(@tempdir, "mykey.pem")
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match "cert_chain entry certs/nonexistent.pem does not exist", @ui.error
+    end
+  end
+
+  def test_validate_duplicate_authors
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.authors = ["Alice", "Bob", "Alice"]
+      @a1.validate
+    end
+
+    assert_match "duplicate author \"Alice\" in authors list", @ui.error
   end
 
   def test_validate_name
