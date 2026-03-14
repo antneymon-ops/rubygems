@@ -35,9 +35,25 @@ jobs:
           ruby --version
           rake --version
 
+      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        with:
+          python-version: "3.13"
+
       - name: Update SPDX license list
         run: |
           rake update_licenses_branch
+          git diff --no-ext-diff --ignore-submodules --quiet "${BASE##*/}" -- || {
+            git push origin
+            gh pr create --base "${BASE##*/}" --fill --label "rubygems: enhancement"
+          }
+        env:
+          BASE: ${{ github.ref }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Update Python lockfile
+        run: |
+          git checkout "${BASE##*/}"
+          rake update_python_lockfile_branch
           git diff --no-ext-diff --ignore-submodules --quiet "${BASE##*/}" -- || {
             git push origin
             gh pr create --base "${BASE##*/}" --fill --label "rubygems: enhancement"
